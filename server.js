@@ -1,7 +1,7 @@
 var connection = require('./connection');
-var connectionString = "mongodb://jakarta:Standar123.@ds017070.mlab.com:17070/jakarta";
+var config = require('./config');
 
-connection.connect(connectionString)
+connection.connect(config.connectionString)
   .then(db => {
 
     var bodyParser = require('body-parser');
@@ -12,12 +12,12 @@ connection.connect(connectionString)
     var express = require('express');
     var app = express();
 
-    var employees = require('./routers/employee-router');
-    var periods = require('./routers/period-router');
-    var employeeWorkplans = require('./routers/employee-workplan-router');
-    var initialChecker = require('./middlewares/params/initial');
-    var dbWrapper = require('./middlewares/dbwrapper');
-    var cors = require('./middlewares/cors');
+    var employees = require('./app/routers/employee-router');
+    var periods = require('./app/routers/period-router');
+    var employeeWorkplans = require('./app/routers/employee-workplan-router');
+    var initialChecker = require('./app/middlewares/params/initial');
+    var dbWrapper = require('./app/middlewares/dbwrapper');
+    var cors = require('./app/middlewares/cors');
 
     app.use(logger('dev'));
     app.use(bodyParser.json());
