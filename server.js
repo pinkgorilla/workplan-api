@@ -12,25 +12,22 @@ connection.connect(config.connectionString)
     var express = require('express');
     var app = express();
 
-    var employees = require('./app/routers/employee-router');
-    var periods = require('./app/routers/period-router');
-    var employeeWorkplans = require('./app/routers/employee-workplan-router');
-    var initialChecker = require('./app/middlewares/params/initial');
-    var dbWrapper = require('./app/middlewares/dbwrapper');
+    var periodsRouter = require('./app/routers/period-router');
+    var workplansRouter = require('./app/routers/user-workplan-router');
     var cors = require('./app/middlewares/cors');
 
     app.use(logger('dev'));
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({ extended: false }));
     app.use(cookieParser());
-    app.use(dbWrapper(db));
     app.use(cors);
+    app.use(function (request, response, next) {
+      request.db = db;
+      next();
+    });
 
-    app.use('/employees', employees);
-    app.use('/periods', periods);
-
-    app.param('initial', initialChecker);
-    app.use('/:initial/workplans', employeeWorkplans);
+    app.use('/periods', periodsRouter);
+    app.use('/workplans', workplansRouter);
 
     app.use(function (request, response, next) {
       var apiVersion = response.locals.apiVersion;
