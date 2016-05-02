@@ -11,6 +11,7 @@ connection.connect(config.connectionString)
 
     var express = require('express');
     var app = express();
+    var port = process.env.PORT || 3000;
 
     var periodsRouter = require('./app/routers/period-router');
     var workplansRouter = require('./app/routers/user-workplan-router');
@@ -50,7 +51,7 @@ connection.connect(config.connectionString)
       });
     });
 
-    app.listen(3000);
-    console.log('listening port 3000');
+    app.listen(port);
+    console.log('listening port ' + port);
 
   });
