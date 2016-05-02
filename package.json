@@ -1,11 +1,10 @@
 {
   "name": "workplan-api",
   "version": "1.0.0",
-  "description": "Registrasi dukungan KTP untuk Ahok",
+  "description": "Workplan api",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Tris Setiawan",
   "license": "MIT",
@@ -15,9 +14,9 @@
     "capital-models": "^1.0.2",
     "cookie-parser": "^1.4.1",
     "express": "^4.13.4",
+    "jsonwebtoken": "^6.2.0",
     "moment": "^2.13.0",
     "mongodb": "^2.1.16",
-    "mongoose": "^4.4.12",
     "morgan": "^1.7.0"
   },
   "devDependencies": {},
