@@ -23,7 +23,8 @@ module.exports = class UserWorkplanService extends Service {
 
     all(request, response, next) {
         var userWorkplanManager = new UserWorkplanManager(request.db);
-        userWorkplanManager.read()
+        var identity = request.identity;
+        userWorkplanManager.read(identity._id)
             .then(docs => {
                 response.locals.data = docs;
                 next();
@@ -37,7 +38,7 @@ module.exports = class UserWorkplanService extends Service {
         var period = request.params.period;
         var userWorkplanManager = new UserWorkplanManager(request.db);
 
-        userWorkplanManager.get(identity._id, month, period)
+        userWorkplanManager.get(identity, month, period)
             .then(doc => {
                 response.locals.data = doc;
                 next();

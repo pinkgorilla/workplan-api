@@ -11,7 +11,7 @@ connection.connect(config.connectionString)
 
     var express = require('express');
     var app = express();
-    var port = process.env.PORT || 3000;
+    var port = process.env.PORT || 8081;
 
     var periodsRouter = require('./app/routers/period-router');
     var workplansRouter = require('./app/routers/user-workplan-router');
