@@ -55,7 +55,7 @@ module.exports = class UserWorkplanManager extends Manager {
         return new Promise(function (resolve, reject) {
 
             var initial = identity.initial;
-            var _accountId = new ObjectId(identity._id);
+            var _accountId = new ObjectId(identity.id);
             var query = { accountId: _accountId, 'period.month': month, 'period.period': period };
 
             this.dbSingleOrDefault(map.workplan.userWorkplan, query)
@@ -104,7 +104,7 @@ module.exports = class UserWorkplanManager extends Manager {
                 reject("identity.initial cannot be empty");
             }
             else {
-                var _accountId = new ObjectId(identity._id);
+                var _accountId = new ObjectId(identity.id);
                 var _periodId = new ObjectId(data.periodId);
                 var _workplanId = new ObjectId(data._id);
                 var periodQuery = { _id: _periodId };

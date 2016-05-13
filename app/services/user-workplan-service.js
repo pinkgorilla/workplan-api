@@ -24,7 +24,7 @@ module.exports = class UserWorkplanService extends Service {
     all(request, response, next) {
         var userWorkplanManager = new UserWorkplanManager(request.db);
         var identity = request.identity;
-        userWorkplanManager.read(identity._id)
+        userWorkplanManager.read(identity.id)
             .then(docs => {
                 response.locals.data = docs;
                 next();
