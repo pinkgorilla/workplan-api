@@ -16,6 +16,7 @@ connection.connect(config.connectionString)
     var periodsRouter = require('./app/routers/period-router');
     var workplansRouter = require('./app/routers/user-workplan-router');
     var cors = require('./app/middlewares/cors');
+    var jwtauth = require('capital-auth');
 
     app.use(logger('dev'));
     app.use(bodyParser.json());
@@ -26,6 +27,7 @@ connection.connect(config.connectionString)
       request.db = db;
       next();
     });
+    app.use(jwtauth.filter(config.secret));
 
     app.use('/periods', periodsRouter);
     app.use('/workplans', workplansRouter);
@@ -46,7 +48,7 @@ connection.connect(config.connectionString)
       response.json({
         'apiVersion': apiVersion,
         'error': {
-          message: error.message
+          message: error.message || error
         }
       });
     });
