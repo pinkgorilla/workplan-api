@@ -10,7 +10,7 @@
   "license": "MIT",
   "dependencies": {
     "body-parser": "^1.15.0",
-    "capital-auth": "^1.0.7",
+    "capital-auth": "^1.0.8",
     "capital-models": "^1.0.10",
     "cookie-parser": "^1.4.1",
     "express": "^4.13.4",
