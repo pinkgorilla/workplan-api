@@ -166,8 +166,12 @@ module.exports = class UserWorkplanManager extends Manager {
                                 reject("workplan contains invalid item: type");
                                 return;
                             }
-                            if (!item.name || item.name.length < 1) {
+                            else if (!item.name || item.name.length < 1) {
                                 reject("workplan contains invalid item: name");
+                                return;
+                            }
+                            else if (item.cancel == true && (!item.cancelReason || item.cancelReason.length < 1)) {
+                                reject("workplan contains invalid item: cancel reason");
                                 return;
                             }
                         }
