@@ -38,7 +38,6 @@ module.exports = class PeriodManager extends Manager {
         return new Promise(function (resolve, reject) {
             var data = new Period(period);
             data.stamp('actor', 'agent');
-            data._id = '';
             data.from = moment(data.from).format("YYYY-MM-DD");
             data.to = moment(data.to).format("YYYY-MM-DD");
 
@@ -81,7 +80,7 @@ module.exports = class PeriodManager extends Manager {
             collection.find().toArray()
                 .then(periods => {
                     for (var p of periods) {
-                        if (p._id.toString() != period._id.toString() && this._dateRangeOverlaps(p.from, p.to, period.from, period.to)) {
+                        if (p._id.toString() != (period._id || '').toString() && this._dateRangeOverlaps(p.from, p.to, period.from, period.to)) {
                             reject("date overlap with another period");
                             return;
                         }
