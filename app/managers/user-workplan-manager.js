@@ -104,49 +104,77 @@ module.exports = class UserWorkplanManager extends Manager {
                 reject("identity.initial cannot be empty");
             }
             else {
-                var _accountId = new ObjectId(user.id);
-                var _periodId = new ObjectId(data.periodId);
-                var _workplanId = new ObjectId(data._id);
-                var periodQuery = { _id: _periodId };
+                data._id = new ObjectId(data._id);
+                data.accountId = new ObjectId(data.accountId);
+                data.periodId = new ObjectId(data.periodId);
 
-                this.dbSingleOrDefault(map.workplan.period, periodQuery)
-                    .then(period => {
-                        if (!period)
-                            reject("invalid period");
-                        else {
-                            var query = { accountId: _accountId, periodId: _periodId };
-                            data.accountId = _accountId;
-                            data.periodId = _periodId;
-                            data.period = period;
-                            data.code = period.month + '0' + period.period + initial;
-                            data.code = data.code.replace('-', '');
+                this.validate(data)
+                    .then(validWorkplan => {
+                        var periodQuery = { _id: validWorkplan.periodId };
+                        this.dbSingleOrDefault(map.workplan.period, periodQuery)
+                            .then(period => {
+                                var query = { accountId: validWorkplan.accountId, periodId: validWorkplan.periodId };
+                                validWorkplan.period = period;
+                                validWorkplan.code = period.month + '0' + period.period + initial;
+                                validWorkplan.code = validWorkplan.code.replace('-', '');
 
-                            var completedCount = 0;
-                            var workplanItems = []
-                            for (var item of data.items) {
-                                var workplanItem = new UserWorkplanItem(item);
-                                workplanItem.userWorkplanId = _workplanId;
+                                var completedCount = 0;
+                                var workplanItems = []
+                                for (var item of validWorkplan.items) {
+                                    var workplanItem = new UserWorkplanItem(item);
+                                    workplanItem.userWorkplanId = validWorkplan._id;
 
-                                workplanItem.no = data.items.indexOf(item) + 1;
-                                workplanItem.code = data.code + (workplanItem.no < 10 ? ('0' + workplanItem.no) : workplanItem.no);
-                                workplanItem.stamp(user.username, '');
-                                if (workplanItem.done === true)
-                                    completedCount++;
-                                workplanItems.push(workplanItem);
-                            }
-                            data.items = workplanItems;
-                            if (data.items.length > 0)
-                                data.completion = parseInt(completedCount * 100 / data.items.length);
+                                    workplanItem.no = validWorkplan.items.indexOf(item) + 1;
+                                    workplanItem.code = validWorkplan.code + (workplanItem.no < 10 ? ('0' + workplanItem.no) : workplanItem.no);
+                                    workplanItem.stamp(user.username, '');
+                                    if (workplanItem.done === true)
+                                        completedCount++;
+                                    workplanItems.push(workplanItem);
+                                }
+                                validWorkplan.items = workplanItems;
+                                if (validWorkplan.items.length > 0)
+                                    validWorkplan.completion = (completedCount * 100 / validWorkplan.items.length).toFixed(2);
 
-                            this.dbUpdate(map.workplan.userWorkplan, query, data)
-                                .then(doc => {
-                                    resolve(doc);
-                                })
-                                .catch(e => reject(e));
-                        }
+                                this.dbUpdate(map.workplan.userWorkplan, query, validWorkplan)
+                                    .then(doc => {
+                                        resolve(doc);
+                                    })
+                                    .catch(e => reject(e));
+                            })
+
                     })
                     .catch(e => reject(e));
             }
+        }.bind(this));
+    }
+
+    validate(userWorkplan) {
+        return new Promise(function (resolve, reject) {
+
+            var accountId = new ObjectId(userWorkplan.accountId);
+            var periodId = new ObjectId(userWorkplan.periodId);
+
+            var periodQuery = { _id: periodId };
+
+            this.dbSingleOrDefault(map.workplan.period, periodQuery)
+                .then(period => {
+                    if (!period)
+                        reject("invalid period");
+                    else {
+                        for (var item of userWorkplan.items) {
+                            if (!item.type || item.type.length < 1) {
+                                reject("workplan contains invalid item: type");
+                                return;
+                            }
+                            if (!item.name || item.name.length < 1) {
+                                reject("workplan contains invalid item: name");
+                                return;
+                            }
+                        }
+                        resolve(userWorkplan);
+                    }
+                })
+                .catch(e => reject(e));
         }.bind(this));
     }
 }
