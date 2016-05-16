@@ -51,11 +51,11 @@ module.exports = class UserWorkplanManager extends Manager {
         }.bind(this));
     }
 
-    get(identity, month, period) {
+    get(user, month, period) {
         return new Promise(function (resolve, reject) {
 
-            var initial = identity.initial;
-            var _accountId = new ObjectId(identity.id);
+            var initial = user.initial;
+            var _accountId = new ObjectId(user.id);
             var query = { accountId: _accountId, 'period.month': month, 'period.period': period };
 
             this.dbSingleOrDefault(map.workplan.userWorkplan, query)
@@ -75,7 +75,7 @@ module.exports = class UserWorkplanManager extends Manager {
                                 workplan = new UserWorkplan(workplan);
                                 workplan.code = period.month + '0' + period.period + initial;
                                 workplan.code = workplan.code.replace('-', '');
-                                workplan.stamp(identity.username, '');
+                                workplan.stamp(user.username, '');
 
                                 this.dbInsert(map.workplan.userWorkplan, workplan, { accountId: 1, periodId: 1 })
                                     .then(result => {
@@ -95,16 +95,16 @@ module.exports = class UserWorkplanManager extends Manager {
         }.bind(this));
     }
 
-    update(identity, workplan) {
+    update(user, workplan) {
 
         return new Promise(function (resolve, reject) {
             var data = new UserWorkplan(workplan);
-            var initial = identity.initial;
+            var initial = user.initial;
             if (!initial) {
                 reject("identity.initial cannot be empty");
             }
             else {
-                var _accountId = new ObjectId(identity.id);
+                var _accountId = new ObjectId(user.id);
                 var _periodId = new ObjectId(data.periodId);
                 var _workplanId = new ObjectId(data._id);
                 var periodQuery = { _id: _periodId };
@@ -129,7 +129,7 @@ module.exports = class UserWorkplanManager extends Manager {
 
                                 workplanItem.no = data.items.indexOf(item) + 1;
                                 workplanItem.code = data.code + (workplanItem.no < 10 ? ('0' + workplanItem.no) : workplanItem.no);
-                                workplanItem.stamp(identity.username, '');
+                                workplanItem.stamp(user.username, '');
                                 if (workplanItem.done === true)
                                     completedCount++;
                                 workplanItems.push(workplanItem);
