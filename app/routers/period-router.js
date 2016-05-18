@@ -1,15 +1,15 @@
-var Service = require('../services/period-service');
 var express = require('express');
-var router = express.Router();
-var jwtauth = require('capital-auth');
-var config = require('../../config');
-var service = new Service();
+var router = express.Router();  
+
+var PeriodService = require('../services/period-service');
+var service = new PeriodService();
+
+var jwt = require('mean-toolkit').passport.jwt; 
 
 // Middlewares.
-router.use(service.version.bind(service));
-router.use(jwtauth.authorize(config.secret));
-// router.param('initial', service.initialCheck.bind(service));
+router.use(service.version.bind(service)); 
 
+router.all('*', jwt.authenticate({ session: false }));
 // Routes.
 router.get('/', service.all.bind(service));
 router.get('/:month/:period', service.get.bind(service));

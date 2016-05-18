@@ -1,18 +1,18 @@
-var Service = require('../services/user-workplan-service');
 var express = require('express');
 var router = express.Router();
-var jwtauth = require('capital-auth');
-var config = require('../../config');
-var service = new Service();
+
+var UserWorkplanService = require('../services/user-workplan-service');
+var service = new UserWorkplanService();
+
+var jwt = require('mean-toolkit').passport.jwt; 
 
 // Middlewares.
 router.use(service.version.bind(service));
-router.use(jwtauth.authorize(config.secret));
 // router.param('initial', service.initialCheck.bind(service));
 router.param('month', service.monthCheck.bind(service));
 router.param('period', service.periodCheck.bind(service));
 
-
+router.all('*', jwt.authenticate({ session: false }));
 // Routes.
 router.get('/', service.all.bind(service));
 router.get('/:month/:period', service.get.bind(service));

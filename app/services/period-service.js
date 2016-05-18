@@ -1,9 +1,10 @@
 'use strict'
-var Service = require('./service');
+var Service = require('mean-toolkit').Service;
 var moment = require('moment');
 var models = require('capital-models');
 var Period = models.workplan.Period;
 var map = models.map;
+var config = require('../../config');
 var PeriodManager = require('../managers/period-manager');
 
 module.exports = class PeriodService extends Service {
@@ -13,50 +14,69 @@ module.exports = class PeriodService extends Service {
   }
 
   all(request, response, next) {
+    this.connectDb(config.connectionString)
+      .then(db => {
 
-    var periodManager = new PeriodManager(request.db);
-    periodManager.read()
-      .then(docs => {
-        response.locals.data = docs;
-        next();
+        var periodManager = new PeriodManager(db);
+        periodManager.read()
+          .then(docs => {
+            response.locals.data = docs;
+            next();
+          })
+          .catch(e => next(e));
       })
       .catch(e => next(e));
   }
 
   get(request, response, next) {
-    var month = request.params.month;
-    var period = request.params.period;
-    var periodManager = new PeriodManager(request.db);
 
-    periodManager.get(month, period)
-      .then(doc => {
-        response.locals.data = doc;
-        next();
+    this.connectDb(config.connectionString)
+      .then(db => {
+
+        var month = request.params.month;
+        var period = request.params.period;
+        var periodManager = new PeriodManager(db);
+
+        periodManager.get(month, period)
+          .then(doc => {
+            response.locals.data = doc;
+            next();
+          })
+          .catch(e => next(e));
       })
       .catch(e => next(e));
   }
 
   create(request, response, next) {
-    var body = request.body;
 
-    var periodManager = new PeriodManager(request.db);
+    this.connectDb(config.connectionString)
+      .then(db => {
 
-    periodManager.create(body)
-      .then(doc => {
-        response.locals.data = doc;
-        next();
+        var body = request.body;
+        var periodManager = new PeriodManager(db);
+
+        periodManager.create(body)
+          .then(doc => {
+            response.locals.data = doc;
+            next();
+          })
+          .catch(e => next(e));
       })
       .catch(e => next(e));
   }
 
   update(request, response, next) {
-    var body = request.body;
-    var periodManager = new PeriodManager(request.db);
+    this.connectDb(config.connectionString)
+      .then(db => {
+        var body = request.body;
+        var periodManager = new PeriodManager(db);
 
-    periodManager.update(body)
-      .then(doc => {
-        response.locals.data = doc;
-        next();
+        periodManager.update(body)
+          .then(doc => {
+            response.locals.data = doc;
+            next();
+          })
+          .catch(e => next(e));
       })
       .catch(e => next(e));
   }

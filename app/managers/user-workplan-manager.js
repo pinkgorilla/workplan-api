@@ -2,7 +2,7 @@
 
 var map = require('capital-models').map;
 var ObjectId = require('mongodb').ObjectId;
-var Manager = require('./manager');
+var Manager = require('mean-toolkit').Manager;
 var moment = require('moment');
 var UserWorkplan = require('capital-models').workplan.UserWorkplan;
 var UserWorkplanItem = require('capital-models').workplan.UserWorkplanItem;
@@ -54,16 +54,17 @@ module.exports = class UserWorkplanManager extends Manager {
     get(user, month, period) {
         return new Promise(function (resolve, reject) {
 
-            var initial = user.initial;
-            var _accountId = new ObjectId(user.id);
-            var query = { accountId: _accountId, 'period.month': month, 'period.period': period };
 
-            this.dbSingleOrDefault(map.workplan.userWorkplan, query)
-                .then(doc => {
-                    if (doc == null) {
-                        var periodQuery = { month: month, period: period };
-                        this.dbSingle(map.workplan.period, periodQuery)
-                            .then(period => {
+            var periodQuery = { month: month, period: period };
+            this.dbSingle(map.workplan.period, periodQuery)
+                .then(period => {
+
+                    var initial = user.initial;
+                    var _accountId = new ObjectId(user.id);
+                    var query = { accountId: _accountId, 'period.month': period.month, 'period.period': period.period };
+                    this.dbSingleOrDefault(map.workplan.userWorkplan, query)
+                        .then(doc => {
+                            if (doc == null) {
                                 var workplan = {
                                     accountId: _accountId,
                                     periodId: period._id,
@@ -83,15 +84,17 @@ module.exports = class UserWorkplanManager extends Manager {
                                         resolve(workplan)
                                     })
                                     .catch(e => reject(e));
-                            })
-                            .catch(e => reject(e));
-                    }
-                    else {
-                        resolve(doc);
-                    }
+                            }
+                            else {
+                                var workplan = new UserWorkplan(doc);
+                                workplan.period = period;
+                                workplan.periodId = period._id;
+                                resolve(workplan);
+                            }
+                        })
+                        .catch(e => reject(e));
                 })
                 .catch(e => reject(e));
-
         }.bind(this));
     }
 

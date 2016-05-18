@@ -1,9 +1,10 @@
 'use strict'
-var Service = require('./service');
+var Service = require('mean-toolkit').Service;
 var models = require('capital-models');
 var UserWorkplan = models.workplan.UserWorkplan;
 var map = models.map;
 var ObjectId = require('mongodb').ObjectId;
+var config = require('../../config');
 var UserWorkplanManager = require('../managers/user-workplan-manager');
 
 module.exports = class UserWorkplanService extends Service {
@@ -22,40 +23,52 @@ module.exports = class UserWorkplanService extends Service {
     }
 
     all(request, response, next) {
-        var userWorkplanManager = new UserWorkplanManager(request.db);
-        var identity = request.identity;
-        userWorkplanManager.read(identity.user.id)
-            .then(docs => {
-                response.locals.data = docs;
-                next();
+        this.connectDb(config.connectionString)
+            .then(db => {
+                var userWorkplanManager = new UserWorkplanManager(db);
+                var user = request.user;
+                userWorkplanManager.read(user.id)
+                    .then(docs => {
+                        response.locals.data = docs;
+                        next();
+                    })
+                    .catch(e => next(e));
             })
             .catch(e => next(e));
     }
 
     get(request, response, next) {
-        var identity = request.identity;
-        var month = request.params.month;
-        var period = request.params.period;
-        var userWorkplanManager = new UserWorkplanManager(request.db);
+        this.connectDb(config.connectionString)
+            .then(db => {
+                var user = request.user;
+                var month = request.params.month;
+                var period = request.params.period;
+                var userWorkplanManager = new UserWorkplanManager(db);
 
-        userWorkplanManager.get(identity.user, month, period)
-            .then(doc => {
-                response.locals.data = doc;
-                next();
+                userWorkplanManager.get(user, month, period)
+                    .then(doc => {
+                        response.locals.data = doc;
+                        next();
+                    })
+                    .catch(e => next(e));
             })
             .catch(e => next(e));
     }
 
     update(request, response, next) {
-        var body = request.body;
-        var identity = request.identity;
+        this.connectDb(config.connectionString)
+            .then(db => {
+                var user = request.user;
+                var body = request.body;
 
-        var userWorkplanManager = new UserWorkplanManager(request.db);
+                var userWorkplanManager = new UserWorkplanManager(db);
 
-        userWorkplanManager.update(identity.user, body)
-            .then(doc => {
-                response.locals.data = doc;
-                next();
+                userWorkplanManager.update(user, body)
+                    .then(doc => {
+                        response.locals.data = doc;
+                        next();
+                    })
+                    .catch(e => next(e));
             })
             .catch(e => next(e));
     }

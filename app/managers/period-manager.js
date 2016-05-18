@@ -2,7 +2,7 @@
 
 var map = require('capital-models').map;
 var ObjectId = require('mongodb').ObjectId;
-var Manager = require('./manager');
+var Manager = require('mean-toolkit').Manager;
 var moment = require('moment');
 var Period = require('capital-models').workplan.Period;
 
