@@ -72,4 +72,60 @@ module.exports = class UserWorkplanService extends Service {
             })
             .catch(e => next(e));
     }
+
+    current(request, response, next) {
+        this.connectDb(config.connectionString)
+            .then(db => {
+                var user = request.user;
+
+                var userWorkplanManager = new UserWorkplanManager(db);
+
+                userWorkplanManager.current(user)
+                    .then(doc => {
+                        response.locals.data = doc;
+                        next();
+                    })
+                    .catch(e => next(e));
+            })
+            .catch(e => next(e));
+    }
+
+    createItem(request, response, next) {
+        this.connectDb(config.connectionString)
+            .then(db => {
+                var user = request.user;
+                var month = request.params.month;
+                var period = request.params.period;
+                var body = request.body;
+
+                var userWorkplanManager = new UserWorkplanManager(db);
+
+                userWorkplanManager.createItem(user, month, period, body)
+                    .then(doc => {
+                        response.locals.data = doc;
+                        next();
+                    })
+                    .catch(e => next(e));
+            })
+            .catch(e => next(e));
+    }
+    updateItem(request, response, next) {
+        this.connectDb(config.connectionString)
+            .then(db => {
+                var user = request.user;
+                var month = request.params.month;
+                var period = request.params.period;
+                var body = request.body;
+
+                var userWorkplanManager = new UserWorkplanManager(db);
+
+                userWorkplanManager.updateItem(user, month, period, body)
+                    .then(doc => {
+                        response.locals.data = doc;
+                        next();
+                    })
+                    .catch(e => next(e));
+            })
+            .catch(e => next(e));
+    }
 }

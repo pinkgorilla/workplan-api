@@ -51,6 +51,20 @@ module.exports = class UserWorkplanManager extends Manager {
         }.bind(this));
     }
 
+    current(user) {
+        return new Promise(function (resolve, reject) {
+            var now = moment(new Date()).format("YYYY-MM-DD");
+            var periodQuery = { $and: [{ from: { $lte: now } }, { to: { $gte: now } }] };
+            this.dbSingle(map.workplan.period, periodQuery)
+                .then(period => {
+                    this.get(user, period.month, period.period)
+                        .then(workplan => resolve(workplan))
+                        .catch(e => reject(e));
+                })
+                .catch(e => reject(e));
+        }.bind(this));
+    }
+
     get(user, month, period) {
         return new Promise(function (resolve, reject) {
 
@@ -148,6 +162,56 @@ module.exports = class UserWorkplanManager extends Manager {
                     })
                     .catch(e => reject(e));
             }
+        }.bind(this));
+    }
+
+    updateItem(user, month, period, updateItem) {
+        return new Promise(function (resolve, reject) {
+            this.get(user, month, period)
+                .then(workplan => {
+                    for (var item of workplan.items) {
+                        if (item.code == updateItem.code) {
+                            var workplanItem = new UserWorkplanItem(Object.assign({}, item, updateItem));
+                            workplanItem.userWorkplanId = workplan._id;
+                            workplanItem.stamp(user.username, '');
+
+                            if (!item.done && updateItem.done) {
+                                var now = moment(new Date()).format("YYYY-MM-DD");
+                                workplanItem.completedDate = now;
+                            }
+
+                            var index = workplan.items.indexOf(item);
+                            workplan.items.splice(index, 1, workplanItem);
+                            break;
+                        }
+                    }
+                    this.update(user, workplan)
+                        .then(updatedWorkplan => resolve(updatedWorkplan))
+                        .catch(e => reject(e));
+                })
+                .catch(e => reject(e));
+        }.bind(this));
+    }
+
+    createItem(user, month, period, createItem) {
+        return new Promise(function (resolve, reject) {
+            this.get(user, month, period)
+                .then(workplan => {
+                    var workplanItem = new UserWorkplanItem(Object.assign({}, item, createItem));
+                    workplanItem.userWorkplanId = workplan._id;
+                    workplanItem.stamp(user.username, '');
+
+                    if (createItem.done) {
+                        var now = moment(new Date()).format("YYYY-MM-DD");
+                        workplanItem.completedDate = now;
+                    }
+
+                    workplan.items.push(workplanItem);
+                    this.update(user, workplan)
+                        .then(updatedWorkplan => resolve(updatedWorkplan))
+                        .catch(e => reject(e));
+                })
+                .catch(e => reject(e));
         }.bind(this));
     }
 
