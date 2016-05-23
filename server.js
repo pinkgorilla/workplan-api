@@ -14,7 +14,7 @@ app.use(passport.initialize());
 var config = require('./config');
 var jwt = require('mean-toolkit').passport.jwt;
 jwt.strategy(function (payload, done) {
-    return done(null, payload);
+    return done(null, payload.user);
 }, config.secret);
 
 var morgan = require('morgan');

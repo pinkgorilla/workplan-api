@@ -37,7 +37,7 @@ module.exports = class PeriodService extends Service {
         var period = request.params.period;
         var periodManager = new PeriodManager(db);
 
-        periodManager.get(month, period)
+        periodManager.get({ month: month, period: period })
           .then(doc => {
             response.locals.data = doc;
             next();

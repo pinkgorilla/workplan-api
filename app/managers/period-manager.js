@@ -23,15 +23,32 @@ module.exports = class PeriodManager extends Manager {
         }.bind(this));
     }
 
-    get(month, period) {
+    getById(periodId) {
+        return new Promise(function (resolve, reject) {
+            var query = { _id: new ObjectId(periodId) };
+            this.get(query)
+                .then(period => resolve(period))
+                .catch(e => reject(e));
+        }.bind(this));
+    }
+
+    getByMonthAndPeriod(month, period) {
         return new Promise(function (resolve, reject) {
             var query = { month: month, period: period };
+            this.get(query)
+                .then(period => resolve(period))
+                .catch(e => reject(e));
+        }.bind(this));
+    }
+
+    get(query) {
+        return new Promise((resolve, reject) => {
             this.dbSingle(map.workplan.period, query)
                 .then(doc => {
                     resolve(doc);
                 })
                 .catch(e => reject(e));
-        }.bind(this));
+        })
     }
 
     create(period) {
@@ -41,7 +58,7 @@ module.exports = class PeriodManager extends Manager {
             data.from = moment(data.from).format("YYYY-MM-DD");
             data.to = moment(data.to).format("YYYY-MM-DD");
 
-            this.validate(data)
+            this._validate(data)
                 .then(validPeriod => {
                     this.dbInsert(map.workplan.period, data, { month: 1, period: 1 })
                         .then(result => {
@@ -60,7 +77,7 @@ module.exports = class PeriodManager extends Manager {
             data.from = moment(data.from).format("YYYY-MM-DD");
             data.to = moment(data.to).format("YYYY-MM-DD");
 
-            this.validate(data)
+            this._validate(data)
                 .then(validPeriod => {
                     var query = { _id: validPeriod._id };
 
@@ -74,7 +91,7 @@ module.exports = class PeriodManager extends Manager {
         }.bind(this));
     }
 
-    validate(period) {
+    _validate(period) {
         return new Promise(function (resolve, reject) {
             var collection = this.db.collection(map.workplan.period);
             collection.find().toArray()

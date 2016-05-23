@@ -3,6 +3,7 @@
 var map = require('capital-models').map;
 var ObjectId = require('mongodb').ObjectId;
 var Manager = require('mean-toolkit').Manager;
+var PeriodManager = require('./period-manager');
 var moment = require('moment');
 var UserWorkplan = require('capital-models').workplan.UserWorkplan;
 var UserWorkplanItem = require('capital-models').workplan.UserWorkplanItem;
@@ -26,9 +27,9 @@ module.exports = class UserWorkplanManager extends Manager {
                             var p = period;
                             var query = { accountId: _accountId, periodId: p._id }
                             this.dbSingleOrDefault(map.workplan.userWorkplan, query)
-                                .then(uWorkplan => {
-                                    if (uWorkplan) {
-                                        resolve(uWorkplan);
+                                .then(userWorkplan => {
+                                    if (userWorkplan) {
+                                        resolve(userWorkplan);
                                     }
                                     else {
                                         var wp = new UserWorkplan({ accountId: _accountId, periodId: p._id, period: p });
@@ -51,61 +52,54 @@ module.exports = class UserWorkplanManager extends Manager {
         }.bind(this));
     }
 
-    current(user) {
-        return new Promise(function (resolve, reject) {
-            var now = moment(new Date()).format("YYYY-MM-DD");
-            var periodQuery = { $and: [{ from: { $lte: now } }, { to: { $gte: now } }] };
-            this.dbSingle(map.workplan.period, periodQuery)
-                .then(period => {
-                    this.get(user, period.month, period.period)
-                        .then(workplan => resolve(workplan))
-                        .catch(e => reject(e));
-                })
-                .catch(e => reject(e));
-        }.bind(this));
-    }
-
     get(user, month, period) {
         return new Promise(function (resolve, reject) {
-
-
-            var periodQuery = { month: month, period: period };
-            this.dbSingle(map.workplan.period, periodQuery)
+            this._getPeriod({ month: month, period: period })
                 .then(period => {
-
                     var initial = user.initial;
                     var _accountId = new ObjectId(user.id);
-                    var query = { accountId: _accountId, 'period.month': period.month, 'period.period': period.period };
+                    var query = { accountId: _accountId, periodId: period._id };
                     this.dbSingleOrDefault(map.workplan.userWorkplan, query)
-                        .then(doc => {
-                            if (doc == null) {
+                        .then(userWorkplan => {
+                            if (userWorkplan == null) {
                                 var workplan = {
                                     accountId: _accountId,
+                                    user: user,
                                     periodId: period._id,
                                     period: period,
                                     items: [],
                                     completion: 0
                                 };
 
-                                workplan = new UserWorkplan(workplan);
-                                workplan.code = period.month + '0' + period.period + initial;
-                                workplan.code = workplan.code.replace('-', '');
-                                workplan.stamp(user.username, '');
-
-                                this.dbInsert(map.workplan.userWorkplan, workplan, { accountId: 1, periodId: 1 })
-                                    .then(result => {
-                                        workplan._id = result.insertedId;
-                                        resolve(workplan)
+                                this._validate(user, workplan)
+                                    .then(validWorkplan => {
+                                        this.dbInsert(map.workplan.userWorkplan, validWorkplan, { accountId: 1, periodId: 1 })
+                                            .then(result => {
+                                                resolve(result)
+                                            })
+                                            .catch(e => reject(e));
                                     })
                                     .catch(e => reject(e));
                             }
                             else {
-                                var workplan = new UserWorkplan(doc);
+                                var workplan = new UserWorkplan(userWorkplan);
                                 workplan.period = period;
                                 workplan.periodId = period._id;
                                 resolve(workplan);
                             }
                         })
+                        .catch(e => reject(e));
+                })
+                .catch(e => reject(e));
+        }.bind(this));
+    }
+
+    current(user) {
+        return new Promise(function (resolve, reject) {
+            this._getPeriod()
+                .then(period => {
+                    this.get(user, period.month, period.period)
+                        .then(workplan => resolve(workplan))
                         .catch(e => reject(e));
                 })
                 .catch(e => reject(e));
@@ -121,44 +115,19 @@ module.exports = class UserWorkplanManager extends Manager {
                 reject("identity.initial cannot be empty");
             }
             else {
-                data._id = new ObjectId(data._id);
-                data.accountId = new ObjectId(data.accountId);
-                data.periodId = new ObjectId(data.periodId);
-
-                this.validate(data)
-                    .then(validWorkplan => {
-                        var periodQuery = { _id: validWorkplan.periodId };
-                        this.dbSingleOrDefault(map.workplan.period, periodQuery)
-                            .then(period => {
+                var periodQuery = { _id: new ObjectId(workplan.periodId) };
+                this._getPeriod(periodQuery)
+                    .then(period => {
+                        this._validate(user, workplan)
+                            .then(validWorkplan => {
                                 var query = { accountId: validWorkplan.accountId, periodId: validWorkplan.periodId };
-                                validWorkplan.period = period;
-                                validWorkplan.code = period.month + '0' + period.period + initial;
-                                validWorkplan.code = validWorkplan.code.replace('-', '');
-
-                                var completedCount = 0;
-                                var workplanItems = []
-                                for (var item of validWorkplan.items) {
-                                    var workplanItem = new UserWorkplanItem(item);
-                                    workplanItem.userWorkplanId = validWorkplan._id;
-
-                                    workplanItem.no = validWorkplan.items.indexOf(item) + 1;
-                                    workplanItem.code = validWorkplan.code + (workplanItem.no < 10 ? ('0' + workplanItem.no) : workplanItem.no);
-                                    workplanItem.stamp(user.username, '');
-                                    if (workplanItem.done === true)
-                                        completedCount++;
-                                    workplanItems.push(workplanItem);
-                                }
-                                validWorkplan.items = workplanItems;
-                                if (validWorkplan.items.length > 0)
-                                    validWorkplan.completion = (completedCount * 100 / validWorkplan.items.length).toFixed(2);
-
                                 this.dbUpdate(map.workplan.userWorkplan, query, validWorkplan)
                                     .then(doc => {
                                         resolve(doc);
                                     })
                                     .catch(e => reject(e));
                             })
-
+                            .catch(e => reject(e));
                     })
                     .catch(e => reject(e));
             }
@@ -215,20 +184,63 @@ module.exports = class UserWorkplanManager extends Manager {
         }.bind(this));
     }
 
-    validate(userWorkplan) {
-        return new Promise(function (resolve, reject) {
+    getSummary(month, period) {
+        return new Promise((resolve, reject) => {
+            var query = null;
+            if (month && period)
+                query = { month: month, period: period };
+                
+            this._getPeriod(query)
+                .then(period => {
+                    var query = { periodId: period._id };
+                    this.db.collection(map.workplan.userWorkplan)
+                        .find(query)
+                        .toArray(collections => {
+                            resolve(collections);
+                        })
+                        .catch(e => reject(e));
+                })
+                .catch(e => reject(e));
+        });
+    }
 
-            var accountId = new ObjectId(userWorkplan.accountId);
-            var periodId = new ObjectId(userWorkplan.periodId);
+    _getPeriod(query) {
+        return new Promise((resolve, reject) => {
+
+            var periodQuery;
+            if (query)
+                periodQuery = query;
+            else {
+                var now = moment(new Date()).format("YYYY-MM-DD");
+                periodQuery = { $and: [{ from: { $lte: now } }, { to: { $gte: now } }] };
+            }
+
+            var periodManager = new PeriodManager(this.db);
+            periodManager.get(periodQuery)
+                .then(period => {
+                    resolve(period);
+                })
+                .catch(e => reject(e));
+        });
+    }
+
+    _validate(user, workplan) {
+        return new Promise(function (resolve, reject) {
+            var _id = null;
+            if (workplan._id && workplan._id.match(/^[0-9a-fA-F]{24}$/))
+                _id = new ObjectId(workplan._id);
+
+            var accountId = new ObjectId(workplan.accountId);
+            var periodId = new ObjectId(workplan.periodId);
 
             var periodQuery = { _id: periodId };
 
-            this.dbSingleOrDefault(map.workplan.period, periodQuery)
+            this._getPeriod(periodQuery)
                 .then(period => {
                     if (!period)
                         reject("invalid period");
                     else {
-                        for (var item of userWorkplan.items) {
+                        for (var item of workplan.items) {
                             if (!item.type || item.type.length < 1) {
                                 reject("workplan contains invalid item: type");
                                 return;
@@ -242,6 +254,36 @@ module.exports = class UserWorkplanManager extends Manager {
                                 return;
                             }
                         }
+
+                        var userWorkplan = new UserWorkplan(workplan);
+                        if (userWorkplan._id && userWorkplan._id.toString().match(/^[0-9a-fA-F]{24}$/))
+                            userWorkplan._id = new ObjectId(userWorkplan._id);
+
+                        userWorkplan.accountId = accountId;
+                        userWorkplan.user = user;
+                        userWorkplan.periodId = periodId;
+                        userWorkplan.period = period;
+                        userWorkplan.code = period.month + '0' + period.period + user.initial;
+                        userWorkplan.code = userWorkplan.code.replace('-', '');
+
+                        var completedCount = 0;
+                        var workplanItems = []
+                        for (var item of userWorkplan.items) {
+                            var userWorkplanItem = new UserWorkplanItem(item);
+                            userWorkplanItem.userWorkplanId = userWorkplan._id;
+
+                            userWorkplanItem.no = userWorkplan.items.indexOf(item) + 1;
+                            userWorkplanItem.code = userWorkplan.code + (userWorkplanItem.no < 10 ? ('0' + userWorkplanItem.no) : userWorkplanItem.no);
+                            userWorkplanItem.stamp('', '');
+                            if (userWorkplanItem.done === true)
+                                completedCount++;
+                            workplanItems.push(userWorkplanItem);
+                        }
+
+                        userWorkplan.items = workplanItems;
+                        if (userWorkplan.items.length > 0)
+                            userWorkplan.completion = (completedCount * 100 / userWorkplan.items.length).toFixed(2);
+
                         resolve(userWorkplan);
                     }
                 })
