@@ -17,11 +17,13 @@ router.all('*', jwt.authenticate({ session: false }));
 router.get('/', service.all.bind(service));
 router.get('/:month/:period', service.get.bind(service));
 router.put('/:month/:period', service.update.bind(service));
-router.get('/current', service.current.bind(service))
 
 router.post('/:month/:period/items/', service.createItem.bind(service))
 router.put('/:month/:period/items/:code', service.updateItem.bind(service))
 // router.put('/:month/:period', service.update.bind(service));
 // router.delete('/:month/:period', service.delete.bind(service));
+router.get('/insight', service.insight.bind(service))
+router.get('/summary', service.summary.bind(service))
+router.get('/summary/:month/:period', service.summary.bind(service))
 
 module.exports = router;

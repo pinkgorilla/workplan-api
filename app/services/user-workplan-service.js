@@ -72,15 +72,33 @@ module.exports = class UserWorkplanService extends Service {
             })
             .catch(e => next(e));
     }
+    summary(request, response, next) {
+        this.connectDb(config.connectionString)
+            .then(db => {
+                var user = request.user;
+                var month = request.params.month;
+                var period = request.params.period;
 
-    current(request, response, next) {
+                var userWorkplanManager = new UserWorkplanManager(db);
+
+                userWorkplanManager.summary(month, period)
+                    .then(doc => {
+                        response.locals.data = doc;
+                        next();
+                    })
+                    .catch(e => next(e));
+            })
+            .catch(e => next(e));
+    }
+    
+    insight(request, response, next) {
         this.connectDb(config.connectionString)
             .then(db => {
                 var user = request.user;
 
                 var userWorkplanManager = new UserWorkplanManager(db);
 
-                userWorkplanManager.current(user)
+                userWorkplanManager.insight(user)
                     .then(doc => {
                         response.locals.data = doc;
                         next();

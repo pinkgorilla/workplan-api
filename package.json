@@ -1,16 +1,17 @@
 {
   "name": "workplan-api",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Workplan api",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
   },
   "author": "Tris Setiawan",
   "license": "MIT",
   "dependencies": {
     "body-parser": "^1.15.0",
-    "capital-models": "^1.0.10",
+    "capital-models": "^1.0.11",
     "cookie-parser": "^1.4.1",
     "express": "^4.13.4",
     "jsonwebtoken": "^6.2.0",
