@@ -7,6 +7,7 @@ var PeriodManager = require('./period-manager');
 var moment = require('moment');
 var UserWorkplan = require('capital-models').workplan.UserWorkplan;
 var UserWorkplanItem = require('capital-models').workplan.UserWorkplanItem;
+var UserWorkplanSummary = require('capital-models').workplan.UserWorkplanSummary;
 
 module.exports = class UserWorkplanManager extends Manager {
 
@@ -94,7 +95,7 @@ module.exports = class UserWorkplanManager extends Manager {
         }.bind(this));
     }
 
-    current(user) {
+    insight(user) {
         return new Promise(function (resolve, reject) {
             this._getPeriod()
                 .then(period => {
@@ -184,18 +185,30 @@ module.exports = class UserWorkplanManager extends Manager {
         }.bind(this));
     }
 
-    getSummary(month, period) {
+    summary(month, period) {
         return new Promise((resolve, reject) => {
             var query = null;
             if (month && period)
                 query = { month: month, period: period };
-                
+
             this._getPeriod(query)
                 .then(period => {
                     var query = { periodId: period._id };
                     this.db.collection(map.workplan.userWorkplan)
                         .find(query)
-                        .toArray(collections => {
+                        // .toArray()
+                        .map(wp => {
+                            var total = wp.items.length;
+                            var done = wp.items.filter(i => i.done === true && i.cancel === false).length;
+                            var cancel = wp.items.filter(i => i.cancel === true).length;
+                            var summary = new UserWorkplanSummary(wp);
+                            summary.total = total;
+                            summary.done = done;
+                            summary.cancel = cancel;
+                            return summary;
+                        })
+                        .toArray()
+                        .then(collections => {
                             resolve(collections);
                         })
                         .catch(e => reject(e));
