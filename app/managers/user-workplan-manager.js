@@ -13,21 +13,22 @@ module.exports = class UserWorkplanManager extends Manager {
 
     constructor(db) {
         super(db);
+        this.periodCollection = this.db.collection(map.workplan.period);
+        this.workplanCollection = this.db.collection(map.workplan.userWorkplan);
     }
 
     read(accountId) {
-        return new Promise(function (resolve, reject) {
-            var collection = this.db.collection(map.workplan.period);
+        return new Promise((resolve, reject) =>  {
 
-            collection.find().toArray()
+            this.periodCollection.find().toArray()
                 .then(periods => {
                     var promises = [];
                     var _accountId = new ObjectId(accountId);
                     for (var period of periods) {
-                        var asyncJob = new Promise(function (resolve, reject) {
+                        var asyncJob = new Promise((resolve, reject) => {
                             var p = period;
                             var query = { accountId: _accountId, periodId: p._id }
-                            this.dbSingleOrDefault(map.workplan.userWorkplan, query)
+                            this.workplanCollection.dbSingleOrDefault(query)
                                 .then(userWorkplan => {
                                     if (userWorkplan) {
                                         resolve(userWorkplan);
@@ -38,7 +39,7 @@ module.exports = class UserWorkplanManager extends Manager {
                                     }
                                 })
                                 .catch(e => reject(e));
-                        }.bind(this));
+                        });
                         promises.push(asyncJob);
                     }
 
@@ -50,17 +51,18 @@ module.exports = class UserWorkplanManager extends Manager {
                 })
                 .catch(e => reject(e));
 
-        }.bind(this));
+        });
     }
 
     get(user, month, period) {
-        return new Promise(function (resolve, reject) {
+        return new Promise((resolve, reject) =>  {
+
             this._getPeriod({ month: month, period: period })
                 .then(period => {
                     var initial = user.initial;
                     var _accountId = new ObjectId(user.id);
                     var query = { accountId: _accountId, periodId: period._id };
-                    this.dbSingleOrDefault(map.workplan.userWorkplan, query)
+                    this.workplanCollection.dbSingleOrDefault(query)
                         .then(userWorkplan => {
                             if (userWorkplan == null) {
                                 var workplan = {
@@ -74,9 +76,13 @@ module.exports = class UserWorkplanManager extends Manager {
 
                                 this._validate(user, workplan)
                                     .then(validWorkplan => {
-                                        this.dbInsert(map.workplan.userWorkplan, validWorkplan, { accountId: 1, periodId: 1 })
-                                            .then(result => {
-                                                resolve(result)
+                                        this._ensureIndexes()
+                                            .then(indexResults => {
+                                                this.workplanCollection.dbInsert(validWorkplan)
+                                                    .then(result => {
+                                                        resolve(result)
+                                                    })
+                                                    .catch(e => reject(e));
                                             })
                                             .catch(e => reject(e));
                                     })
@@ -92,11 +98,11 @@ module.exports = class UserWorkplanManager extends Manager {
                         .catch(e => reject(e));
                 })
                 .catch(e => reject(e));
-        }.bind(this));
+        });
     }
 
     insight(user) {
-        return new Promise(function (resolve, reject) {
+        return new Promise((resolve, reject) =>  {
             this._getPeriod()
                 .then(period => {
                     this.get(user, period.month, period.period)
@@ -104,12 +110,13 @@ module.exports = class UserWorkplanManager extends Manager {
                         .catch(e => reject(e));
                 })
                 .catch(e => reject(e));
-        }.bind(this));
+        });
     }
 
     update(user, workplan) {
 
-        return new Promise(function (resolve, reject) {
+        return new Promise((resolve, reject) =>  {
+
             var data = new UserWorkplan(workplan);
             var initial = user.initial;
             if (!initial) {
@@ -122,7 +129,7 @@ module.exports = class UserWorkplanManager extends Manager {
                         this._validate(user, workplan)
                             .then(validWorkplan => {
                                 var query = { accountId: validWorkplan.accountId, periodId: validWorkplan.periodId };
-                                this.dbUpdate(map.workplan.userWorkplan, query, validWorkplan)
+                                this.workplanCollection.dbUpdate(query, validWorkplan)
                                     .then(doc => {
                                         resolve(doc);
                                     })
@@ -132,11 +139,11 @@ module.exports = class UserWorkplanManager extends Manager {
                     })
                     .catch(e => reject(e));
             }
-        }.bind(this));
+        });
     }
 
     updateItem(user, month, period, updateItem) {
-        return new Promise(function (resolve, reject) {
+        return new Promise((resolve, reject) =>  {
             this.get(user, month, period)
                 .then(workplan => {
                     for (var item of workplan.items) {
@@ -160,11 +167,11 @@ module.exports = class UserWorkplanManager extends Manager {
                         .catch(e => reject(e));
                 })
                 .catch(e => reject(e));
-        }.bind(this));
+        });
     }
 
     createItem(user, month, period, createItem) {
-        return new Promise(function (resolve, reject) {
+        return new Promise((resolve, reject) =>  {
             this.get(user, month, period)
                 .then(workplan => {
                     var workplanItem = new UserWorkplanItem(Object.assign({}, item, createItem));
@@ -182,7 +189,7 @@ module.exports = class UserWorkplanManager extends Manager {
                         .catch(e => reject(e));
                 })
                 .catch(e => reject(e));
-        }.bind(this));
+        });
     }
 
     summary(month, period) {
@@ -194,7 +201,7 @@ module.exports = class UserWorkplanManager extends Manager {
             this._getPeriod(query)
                 .then(period => {
                     var query = { periodId: period._id };
-                    this.db.collection(map.workplan.userWorkplan)
+                    this.workplanCollection
                         .find(query)
                         // .toArray()
                         .map(wp => {
@@ -219,7 +226,6 @@ module.exports = class UserWorkplanManager extends Manager {
 
     _getPeriod(query) {
         return new Promise((resolve, reject) => {
-
             var periodQuery;
             if (query)
                 periodQuery = query;
@@ -238,7 +244,7 @@ module.exports = class UserWorkplanManager extends Manager {
     }
 
     _validate(user, workplan) {
-        return new Promise(function (resolve, reject) {
+        return new Promise((resolve, reject) =>  {
             var _id = null;
             if (workplan._id && workplan._id.match(/^[0-9a-fA-F]{24}$/))
                 _id = new ObjectId(workplan._id);
@@ -301,6 +307,24 @@ module.exports = class UserWorkplanManager extends Manager {
                     }
                 })
                 .catch(e => reject(e));
-        }.bind(this));
+        });
+    }
+
+    _ensureIndexes() {
+        return new Promise((resolve, reject) => {
+            // account indexes
+            var userWorkplanPromise = this.db.collection(map.workplan.userWorkplan).createIndexes([
+                {
+                    key: { accountId: 1, periodId: 1 },
+                    name: "ix_user-workplans_accountId_periodId",
+                    unique: true
+                }]);
+
+            Promise.all([userWorkplanPromise])
+                .then(results => resolve(results))
+                .catch(e => {
+                    reject(e);
+                });
+        })
     }
 }
