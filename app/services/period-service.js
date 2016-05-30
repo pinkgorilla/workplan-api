@@ -53,7 +53,8 @@ module.exports = class PeriodService extends Service {
       .then(db => {
 
         var body = request.body;
-        var periodManager = new PeriodManager(db);
+        var user = request.user;
+        var periodManager = new PeriodManager(db, user);
 
         periodManager.create(body)
           .then(doc => {
@@ -68,8 +69,9 @@ module.exports = class PeriodService extends Service {
   update(request, response, next) {
     this.connectDb(config.connectionString)
       .then(db => {
+        var user = request.user;
         var body = request.body;
-        var periodManager = new PeriodManager(db);
+        var periodManager = new PeriodManager(db, user);
 
         periodManager.update(body)
           .then(doc => {

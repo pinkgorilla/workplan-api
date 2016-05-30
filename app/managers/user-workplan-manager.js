@@ -11,14 +11,15 @@ var UserWorkplanSummary = require('capital-models').workplan.UserWorkplanSummary
 
 module.exports = class UserWorkplanManager extends Manager {
 
-    constructor(db) {
+    constructor(db, user) {
         super(db);
+        this.user = user;
         this.periodCollection = this.db.collection(map.workplan.period);
         this.workplanCollection = this.db.collection(map.workplan.userWorkplan);
     }
 
     read(accountId) {
-        return new Promise((resolve, reject) =>  {
+        return new Promise((resolve, reject) => {
 
             this.periodCollection.find().toArray()
                 .then(periods => {
@@ -55,7 +56,7 @@ module.exports = class UserWorkplanManager extends Manager {
     }
 
     get(user, month, period) {
-        return new Promise((resolve, reject) =>  {
+        return new Promise((resolve, reject) => {
 
             this._getPeriod({ month: month, period: period })
                 .then(period => {
@@ -65,19 +66,20 @@ module.exports = class UserWorkplanManager extends Manager {
                     this.workplanCollection.dbSingleOrDefault(query)
                         .then(userWorkplan => {
                             if (userWorkplan == null) {
-                                var workplan = {
+                                var workplan = new UserWorkplan({
                                     accountId: _accountId,
                                     user: user,
                                     periodId: period._id,
                                     period: period,
                                     items: [],
                                     completion: 0
-                                };
-
+                                });
+                                delete (workplan._id);
                                 this._validate(user, workplan)
                                     .then(validWorkplan => {
                                         this._ensureIndexes()
                                             .then(indexResults => {
+                                                validWorkplan.stamp(this.user.username, 'actor');
                                                 this.workplanCollection.dbInsert(validWorkplan)
                                                     .then(result => {
                                                         resolve(result)
@@ -102,7 +104,7 @@ module.exports = class UserWorkplanManager extends Manager {
     }
 
     insight(user) {
-        return new Promise((resolve, reject) =>  {
+        return new Promise((resolve, reject) => {
             this._getPeriod()
                 .then(period => {
                     this.get(user, period.month, period.period)
@@ -115,25 +117,40 @@ module.exports = class UserWorkplanManager extends Manager {
 
     update(user, workplan) {
 
-        return new Promise((resolve, reject) =>  {
+        return new Promise((resolve, reject) => {
 
-            var data = new UserWorkplan(workplan);
+            var _workplanId = new ObjectId(workplan.accountId);
+            var _periodId = new ObjectId(workplan.periodId);
+
             var initial = user.initial;
             if (!initial) {
                 reject("identity.initial cannot be empty");
             }
             else {
-                var periodQuery = { _id: new ObjectId(workplan.periodId) };
+                var periodQuery = { _id: _periodId };
+
                 this._getPeriod(periodQuery)
                     .then(period => {
-                        this._validate(user, workplan)
-                            .then(validWorkplan => {
-                                var query = { accountId: validWorkplan.accountId, periodId: validWorkplan.periodId };
-                                this.workplanCollection.dbUpdate(query, validWorkplan)
-                                    .then(doc => {
-                                        resolve(doc);
-                                    })
-                                    .catch(e => reject(e));
+                        var query = { accountId: _workplanId, periodId: _periodId };
+                        this.workplanCollection.dbSingle(query)
+                            .then(dbWorkplan => {
+                                if (dbWorkplan._stamp != workplan._stamp)
+                                    reject("stamp mismatch");
+                                else {
+                                    this._validate(user, new UserWorkplan(Object.assign(dbWorkplan, workplan)))
+                                        .then(validWorkplan => {
+                                            validWorkplan.stamp(this.user.username, 'actor');
+                                            for (var item of validWorkplan.items)
+                                                item.stamp(this.user.username, 'actor');
+                                                
+                                            this.workplanCollection.dbUpdate(query, validWorkplan)
+                                                .then(doc => {
+                                                    resolve(doc);
+                                                })
+                                                .catch(e => reject(e));
+                                        })
+                                        .catch(e => reject(e));
+                                }
                             })
                             .catch(e => reject(e));
                     })
@@ -143,7 +160,7 @@ module.exports = class UserWorkplanManager extends Manager {
     }
 
     updateItem(user, month, period, updateItem) {
-        return new Promise((resolve, reject) =>  {
+        return new Promise((resolve, reject) => {
             this.get(user, month, period)
                 .then(workplan => {
                     for (var item of workplan.items) {
@@ -171,7 +188,7 @@ module.exports = class UserWorkplanManager extends Manager {
     }
 
     createItem(user, month, period, createItem) {
-        return new Promise((resolve, reject) =>  {
+        return new Promise((resolve, reject) => {
             this.get(user, month, period)
                 .then(workplan => {
                     var workplanItem = new UserWorkplanItem(Object.assign({}, item, createItem));
@@ -244,7 +261,7 @@ module.exports = class UserWorkplanManager extends Manager {
     }
 
     _validate(user, workplan) {
-        return new Promise((resolve, reject) =>  {
+        return new Promise((resolve, reject) => {
             var _id = null;
             if (workplan._id && workplan._id.match(/^[0-9a-fA-F]{24}$/))
                 _id = new ObjectId(workplan._id);

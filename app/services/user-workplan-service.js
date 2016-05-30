@@ -26,8 +26,8 @@ module.exports = class UserWorkplanService extends Service {
     all(request, response, next) {
         this.connectDb(config.connectionString)
             .then(db => {
-                var userWorkplanManager = new UserWorkplanManager(db);
                 var user = request.user;
+                var userWorkplanManager = new UserWorkplanManager(db, user);
                 userWorkplanManager.read(user.id)
                     .then(docs => {
                         response.locals.data = docs;
@@ -44,7 +44,7 @@ module.exports = class UserWorkplanService extends Service {
                 var user = request.user;
                 var month = request.params.month;
                 var period = request.params.period;
-                var userWorkplanManager = new UserWorkplanManager(db);
+                var userWorkplanManager = new UserWorkplanManager(db, user);
 
                 userWorkplanManager.get(user, month, period)
                     .then(doc => {
@@ -62,7 +62,7 @@ module.exports = class UserWorkplanService extends Service {
                 var user = request.user;
                 var body = request.body;
 
-                var userWorkplanManager = new UserWorkplanManager(db);
+                var userWorkplanManager = new UserWorkplanManager(db, user);
 
                 userWorkplanManager.update(user, body)
                     .then(doc => {
@@ -80,7 +80,7 @@ module.exports = class UserWorkplanService extends Service {
                 var month = request.params.month;
                 var period = request.params.period;
 
-                var userWorkplanManager = new UserWorkplanManager(db);
+                var userWorkplanManager = new UserWorkplanManager(db, user);
 
                 userWorkplanManager.summary(month, period)
                     .then(doc => {
@@ -100,13 +100,13 @@ module.exports = class UserWorkplanService extends Service {
                 var month = request.params.month;
                 var period = request.params.period;
 
-                var userWorkplanManager = new UserWorkplanManager(db);
+                var userWorkplanManager = new UserWorkplanManager(db, user);
 
                 userWorkplanManager.summary(month, period)
                     .then(doc => {
                         json2csv({
                             data: doc,
-                            fields: ["user.name", "total", "done", "cancel", "completion"]
+                            fields: ["code", "user.name", "total", "done", "cancel", "completion"]
                         },
                             function (err, csv) {
                                 response.set({ 'Content-Disposition': 'attachment; filename=\"' + month + '-P' + period + '.csv\"', 'Content-type': 'text/csv' });
@@ -123,7 +123,7 @@ module.exports = class UserWorkplanService extends Service {
             .then(db => {
                 var user = request.user;
 
-                var userWorkplanManager = new UserWorkplanManager(db);
+                var userWorkplanManager = new UserWorkplanManager(db, user);
 
                 userWorkplanManager.insight(user)
                     .then(doc => {
@@ -143,7 +143,7 @@ module.exports = class UserWorkplanService extends Service {
                 var period = request.params.period;
                 var body = request.body;
 
-                var userWorkplanManager = new UserWorkplanManager(db);
+                var userWorkplanManager = new UserWorkplanManager(db, user);
 
                 userWorkplanManager.createItem(user, month, period, body)
                     .then(doc => {
@@ -162,7 +162,7 @@ module.exports = class UserWorkplanService extends Service {
                 var period = request.params.period;
                 var body = request.body;
 
-                var userWorkplanManager = new UserWorkplanManager(db);
+                var userWorkplanManager = new UserWorkplanManager(db, user);
 
                 userWorkplanManager.updateItem(user, month, period, body)
                     .then(doc => {

@@ -8,8 +8,9 @@ var Period = require('capital-models').workplan.Period;
 
 module.exports = class PeriodManager extends Manager {
 
-    constructor(db) {
+    constructor(db, user) {
         super(db);
+        this.user = user;
         this.periodCollection = this.db.collection(map.workplan.period);
     }
 
@@ -62,6 +63,7 @@ module.exports = class PeriodManager extends Manager {
                 .then(validPeriod => {
                     this._ensureIndexes()
                         .then(indexResults => {
+                            validPeriod.stamp(this.user.username, 'agent');
                             this.periodCollection.dbInsert(data)
                                 .then(result => {
                                     resolve(result);
@@ -87,21 +89,32 @@ module.exports = class PeriodManager extends Manager {
             data.from = moment(data.from).format("YYYY-MM-DD");
             data.to = moment(data.to).format("YYYY-MM-DD");
 
-            this._validate(data)
-                .then(validPeriod => {
-                    var query = { _id: validPeriod._id };
+            var query = { _id: data._id };
 
-                    this.periodCollection.dbUpdate(query, validPeriod)
-                        .then(doc => {
-                            resolve(doc);
-                        })
-                        .catch(e => reject(e));
+            this.periodCollection.dbSingle(query)
+                .then(dbPeriod => {
+                    if (dbPeriod._stamp != data._stamp)
+                        reject("stamp mismatch");
+                    else {
+                        var p = new Period(Object.assign({}, dbPeriod, data))
+                        this._validate(p)
+                            .then(validPeriod => {
+                                validPeriod.stamp(this.user.username, 'agent')
+                                this.periodCollection.dbUpdate(query, validPeriod)
+                                    .then(doc => {
+                                        resolve(doc);
+                                    })
+                                    .catch(e => reject(e));
+                            })
+                            .catch(e => reject(e));
+                    }
                 })
                 .catch(e => reject(e));
         });
     }
 
     _validate(period) {
+        var vPeriod = new Period(period);
         return new Promise((resolve, reject) => {
             this.periodCollection.find().toArray()
                 .then(periods => {
@@ -118,12 +131,9 @@ module.exports = class PeriodManager extends Manager {
     }
 
     _dateRangeOverlaps(a_start, a_end, b_start, b_end) {
-        return (a_start <= b_end) && (a_end >= b_start);
-        // if (a_start <= b_start && b_start <= a_end) return true; // b starts in a
-        // if (a_start <= b_end && b_end <= a_end) return true; // b ends in a
-        // if (b_start < a_start && a_end < b_end) return true; // a in b
-        // return false;
+        return (a_start <= b_end) && (a_end >= b_start); 
     }
+    
     _ensureIndexes() {
         return new Promise((resolve, reject) => {
             // account indexes
