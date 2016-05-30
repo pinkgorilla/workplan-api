@@ -1,6 +1,6 @@
 {
   "name": "workplan-api",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Workplan api",
   "main": "server.js",
   "scripts": {
@@ -14,8 +14,9 @@
     "capital-models": "^1.0.11",
     "cookie-parser": "^1.4.1",
     "express": "^4.13.4",
+    "json2csv": "^3.4.2",
     "jsonwebtoken": "^6.2.0",
-    "mean-toolkit": "^1.0.2",
+    "mean-toolkit": "^1.0.3",
     "moment": "^2.13.0",
     "mongodb": "^2.1.16",
     "morgan": "^1.7.0",

@@ -6,6 +6,7 @@ var map = models.map;
 var ObjectId = require('mongodb').ObjectId;
 var config = require('../../config');
 var UserWorkplanManager = require('../managers/user-workplan-manager');
+var json2csv = require('json2csv');
 
 module.exports = class UserWorkplanService extends Service {
 
@@ -90,7 +91,33 @@ module.exports = class UserWorkplanService extends Service {
             })
             .catch(e => next(e));
     }
-    
+
+    summaryCsv(request, response, next) {
+
+        this.connectDb(config.connectionString)
+            .then(db => {
+                var user = request.user;
+                var month = request.params.month;
+                var period = request.params.period;
+
+                var userWorkplanManager = new UserWorkplanManager(db);
+
+                userWorkplanManager.summary(month, period)
+                    .then(doc => {
+                        json2csv({
+                            data: doc,
+                            fields: ["user.name", "total", "done", "cancel", "completion"]
+                        },
+                            function (err, csv) {
+                                response.set({ 'Content-Disposition': 'attachment; filename=\"' + month + '-P' + period + '.csv\"', 'Content-type': 'text/csv' });
+                                response.send(csv);
+                            })
+                    })
+                    .catch(e => next(e));
+            })
+            .catch(e => next(e));
+    }
+
     insight(request, response, next) {
         this.connectDb(config.connectionString)
             .then(db => {
