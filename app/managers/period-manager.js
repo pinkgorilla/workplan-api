@@ -93,7 +93,7 @@ module.exports = class PeriodManager extends Manager {
 
             this.periodCollection.dbSingle(query)
                 .then(dbPeriod => {
-                    if (dbPeriod._stamp != data._stamp)
+                    if (dbPeriod._stamp && dbPeriod._stamp.toString().length > 0 && dbPeriod._stamp != date._stamp)
                         reject("stamp mismatch");
                     else {
                         var p = new Period(Object.assign({}, dbPeriod, data))
@@ -131,9 +131,9 @@ module.exports = class PeriodManager extends Manager {
     }
 
     _dateRangeOverlaps(a_start, a_end, b_start, b_end) {
-        return (a_start <= b_end) && (a_end >= b_start); 
+        return (a_start <= b_end) && (a_end >= b_start);
     }
-    
+
     _ensureIndexes() {
         return new Promise((resolve, reject) => {
             // account indexes

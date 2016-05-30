@@ -134,7 +134,7 @@ module.exports = class UserWorkplanManager extends Manager {
                         var query = { accountId: _accountId, periodId: _periodId };
                         this.workplanCollection.dbSingle(query)
                             .then(dbWorkplan => {
-                                if (dbWorkplan._stamp != workplan._stamp)
+                                if (dbWorkplan._stamp && dbWorkplan._stamp.toString().length > 0 && dbWorkplan._stamp != workplan._stamp)
                                     reject("stamp mismatch");
                                 else {
                                     this._validate(user, new UserWorkplan(Object.assign(dbWorkplan, workplan)))
