@@ -119,7 +119,7 @@ module.exports = class UserWorkplanManager extends Manager {
 
         return new Promise((resolve, reject) => {
 
-            var _workplanId = new ObjectId(workplan.accountId);
+            var _accountId = new ObjectId(workplan.accountId);
             var _periodId = new ObjectId(workplan.periodId);
 
             var initial = user.initial;
@@ -131,7 +131,7 @@ module.exports = class UserWorkplanManager extends Manager {
 
                 this._getPeriod(periodQuery)
                     .then(period => {
-                        var query = { accountId: _workplanId, periodId: _periodId };
+                        var query = { accountId: _accountId, periodId: _periodId };
                         this.workplanCollection.dbSingle(query)
                             .then(dbWorkplan => {
                                 if (dbWorkplan._stamp != workplan._stamp)
@@ -262,9 +262,9 @@ module.exports = class UserWorkplanManager extends Manager {
 
     _validate(user, workplan) {
         return new Promise((resolve, reject) => {
-            var _id = null;
-            if (workplan._id && workplan._id.match(/^[0-9a-fA-F]{24}$/))
-                _id = new ObjectId(workplan._id);
+            // var _id = null;
+            // if (workplan._id && workplan._id.toString().match(/^[0-9a-fA-F]{24}$/))
+            //     _id = new ObjectId(workplan._id);
 
             var accountId = new ObjectId(workplan.accountId);
             var periodId = new ObjectId(workplan.periodId);
