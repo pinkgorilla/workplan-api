@@ -121,8 +121,7 @@ module.exports = class UserWorkplanService extends Service {
     insight(request, response, next) {
         this.connectDb(config.connectionString)
             .then(db => {
-                var user = request.user;
-
+                var user = request.user; 
                 var userWorkplanManager = new UserWorkplanManager(db, user);
 
                 userWorkplanManager.insight(user)
