@@ -17,6 +17,7 @@
     "jsonwebtoken": "^6.2.0",
     "mean-toolkit": "^1.0.4",
     "moment": "^2.13.0",
+    "mongo-factory": "^1.0.0",
     "mongodb": "^2.1.16",
     "morgan": "^1.7.0",
     "passport": "^0.3.2",
