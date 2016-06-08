@@ -1,6 +1,6 @@
 {
   "name": "workplan-api",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Workplan api",
   "main": "server.js",
   "scripts": {
@@ -11,7 +11,6 @@
   "license": "MIT",
   "dependencies": {
     "body-parser": "^1.15.0",
-    "capital-models": "^1.0.12",
     "cookie-parser": "^1.4.1",
     "express": "^4.13.4",
     "json2csv": "^3.4.2",
@@ -22,7 +21,8 @@
     "morgan": "^1.7.0",
     "passport": "^0.3.2",
     "passport-jwt": "^2.0.0",
-    "passport-local": "^1.0.0"
+    "passport-local": "^1.0.0",
+    "workplan-mod": "^1.0.2"
   },
   "devDependencies": {},
   "repository": {
