@@ -23,7 +23,7 @@
     "passport": "^0.3.2",
     "passport-jwt": "^2.0.0",
     "passport-local": "^1.0.0",
-    "workplan-mod": "^1.0.3"
+    "workplan-mod": "^1.0.4"
   },
   "devDependencies": {},
   "repository": {
