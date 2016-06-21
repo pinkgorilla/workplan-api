@@ -1,6 +1,6 @@
 {
   "name": "workplan-api",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Workplan api",
   "main": "server.js",
   "scripts": {
@@ -23,7 +23,7 @@
     "passport": "^0.3.2",
     "passport-jwt": "^2.0.0",
     "passport-local": "^1.0.0",
-    "workplan-mod": "^1.0.4"
+    "workplan-mod": "git+https://git@github.com/pinkgorilla/workplan-module.git"
   },
   "devDependencies": {},
   "repository": {
